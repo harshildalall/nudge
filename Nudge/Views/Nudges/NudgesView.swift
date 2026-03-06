@@ -3,11 +3,12 @@ import SwiftUI
 struct NudgesView: View {
     @StateObject private var repo = EventRepository.shared
     @StateObject private var presetStore = PresetStore.shared
+    @State private var timeNow = Date()
 
     var body: some View {
         NavigationStack {
             Group {
-                if let active = repo.activeEvent() {
+                if let active = repo.activeEvent(now: timeNow) {
                     activeNudgeView(active)
                 } else {
                     idleView
@@ -19,12 +20,18 @@ struct NudgesView: View {
         .onAppear {
             CalendarService.shared.refresh()
         }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { date in
+            timeNow = date
+        }
     }
 
     private func activeNudgeView(_ event: NudgeEvent) -> some View {
         let checkpoints = CheckpointEngine.checkpoints(for: event, presets: presetStore.presets)
-        let next = CheckpointEngine.nextCheckpoint(checkpoints)
-        let progress = CheckpointEngine.progress(completed: event.completedCheckpoints, total: event.numberOfCheckpoints(using: presetStore.presets))
+        let next = CheckpointEngine.nextCheckpoint(checkpoints, now: timeNow)
+        let completed = checkpoints.filter { $0.at <= timeNow }.count
+        let ringProgress = timeProgress(event: event)
+        let urgencyMessage = UrgencyMessages.message(checkpointIndex: completed, total: checkpoints.count)
+
         return ScrollView {
             VStack(spacing: 24) {
                 HStack {
@@ -32,45 +39,25 @@ struct NudgesView: View {
                         .font(Theme.headline)
                         .foregroundColor(Theme.secondary)
                     Spacer()
-                    Text(startTimeString(event.startDate))
+                    Text(formatTime(event.startDate))
                         .font(Theme.callout)
                         .foregroundColor(Theme.secondary)
                 }
                 .padding(.horizontal, 20)
 
-                Text("Let's get up now...")
+                Text(urgencyMessage)
                     .font(Theme.title)
-                    .foregroundColor(Theme.primary)
+                    .foregroundColor(completed >= checkpoints.count - 1 && !checkpoints.isEmpty ? Theme.urgency : Theme.primary)
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
 
                 if let n = next {
-                    circularCountdown(next: n, progress: progress, checkpoints: checkpoints)
+                    circularCountdown(next: n, progress: ringProgress)
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Alarm Progress")
-                        .font(Theme.caption)
-                        .foregroundColor(Theme.secondary)
-                    HStack {
-                        ForEach(checkpoints) { cp in
-                            Text(timeString(cp.at))
-                                .font(Theme.caption2)
-                                .foregroundColor(Theme.secondary)
-                        }
-                    }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(height: 8)
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Theme.accent)
-                                .frame(width: geo.size.width * progress, height: 8)
-                        }
-                    }
-                    .frame(height: 8)
-                }
-                .padding(.horizontal, 20)
+                alarmProgressSection(checkpoints: checkpoints, completed: completed, timeProgress: ringProgress)
+                    .padding(.horizontal, 20)
 
                 VStack(spacing: 12) {
                     Button("I'm Ready") {
@@ -83,9 +70,21 @@ struct NudgesView: View {
                     .background(Theme.accent)
                     .cornerRadius(12)
 
-                    Button("Cancel Event") { }
-                        .font(Theme.callout)
-                        .foregroundColor(Theme.secondary)
+                    Button("+ 15 min buffer") {
+                        addBuffer(to: event)
+                    }
+                    .font(Theme.callout)
+                    .foregroundColor(Theme.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Theme.accent.opacity(0.12))
+                    .cornerRadius(10)
+
+                    Button("Cancel Event") {
+                        markReady(event)
+                    }
+                    .font(Theme.callout)
+                    .foregroundColor(Theme.secondary)
                 }
                 .padding(.top, 8)
                 .padding(.horizontal, 20)
@@ -94,7 +93,9 @@ struct NudgesView: View {
         }
     }
 
-    private func circularCountdown(next: Checkpoint, progress: Double, checkpoints: [Checkpoint]) -> some View {
+    // MARK: - Circular Countdown
+
+    private func circularCountdown(next: Checkpoint, progress: Double) -> some View {
         ZStack {
             Circle()
                 .stroke(Color.gray.opacity(0.2), lineWidth: 8)
@@ -116,6 +117,64 @@ struct NudgesView: View {
         .padding(.vertical, 16)
     }
 
+    // MARK: - Alarm Progress Bar
+
+    private func alarmProgressSection(checkpoints: [Checkpoint], completed: Int, timeProgress: Double) -> some View {
+        let total = checkpoints.count
+        let barProgress = timeProgress
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Alarm Progress")
+                    .font(Theme.caption)
+                    .foregroundColor(Theme.secondary)
+                Spacer()
+                Text("\(completed)/\(total)")
+                    .font(Theme.caption)
+                    .foregroundColor(Theme.secondary)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 8)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Theme.accent)
+                        .frame(width: geo.size.width * barProgress, height: 8)
+                    // Checkpoint dot markers positioned proportionally
+                    if total > 1 {
+                        ForEach(Array(checkpoints.enumerated()), id: \.offset) { idx, _ in
+                            let fraction = Double(idx) / Double(total - 1)
+                            Circle()
+                                .fill(idx < completed ? Theme.accent : Color.white)
+                                .overlay(Circle().stroke(idx < completed ? Theme.accent : Color.gray.opacity(0.5), lineWidth: 1.5))
+                                .frame(width: 12, height: 12)
+                                .offset(x: geo.size.width * fraction - 6)
+                        }
+                    }
+                }
+            }
+            .frame(height: 12)
+
+            // Time labels spread evenly across full width
+            if !checkpoints.isEmpty {
+                HStack(spacing: 0) {
+                    ForEach(Array(checkpoints.enumerated()), id: \.offset) { idx, cp in
+                        Text(shortTime(cp.at))
+                            .font(Theme.caption2)
+                            .foregroundColor(idx < completed ? Theme.accent : Theme.secondary)
+                        if idx < checkpoints.count - 1 {
+                            Spacer()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Idle
+
     private var idleView: some View {
         ContentUnavailableView(
             "No active events",
@@ -125,21 +184,41 @@ struct NudgesView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func startTimeString(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: d)
-    }
+    // MARK: - Helpers
 
-    private func timeString(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm"
-        return f.string(from: d)
+    /// Smooth 0…1 progress based on elapsed time through the full prep window.
+    private func timeProgress(event: NudgeEvent) -> Double {
+        let prepMins = event.prepMinutes(using: presetStore.presets)
+        let prepStart = event.startDate.addingTimeInterval(-Double(prepMins) * 60)
+        let totalSecs = event.startDate.timeIntervalSince(prepStart)
+        guard totalSecs > 0 else { return 0 }
+        let elapsed = timeNow.timeIntervalSince(prepStart)
+        return min(max(elapsed / totalSecs, 0), 1)
     }
 
     private func markReady(_ event: NudgeEvent) {
-        let total = event.numberOfCheckpoints(using: presetStore.presets)
-        EventOverlayStore.shared.setCompletedCheckpoints(total, eventId: event.id)
+        CheckpointScheduler.shared.dismissActiveEvent(event)
+    }
+
+    private func addBuffer(to event: NudgeEvent) {
+        let currentPrep = event.prepMinutes(using: presetStore.presets)
+        let newPrep = currentPrep + 15
+        repo.updateOverlay(
+            for: event,
+            prepMinutes: newPrep,
+            checkpoints: event.numberOfCheckpoints(using: presetStore.presets),
+            alarmSound: event.alarmSoundOverride,
+            presetId: event.presetId
+        )
+        CheckpointScheduler.shared.start()
+    }
+
+    private func formatTime(_ d: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f.string(from: d)
+    }
+
+    private func shortTime(_ d: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "h:mm"; return f.string(from: d)
     }
 }
 
@@ -155,10 +234,7 @@ struct CountdownView: View {
 
     private func update() {
         let now = Date()
-        guard target > now else {
-            remaining = "0:00"
-            return
-        }
+        guard target > now else { remaining = "0:00"; return }
         let interval = target.timeIntervalSince(now)
         let m = Int(interval) / 60
         let s = Int(interval) % 60

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9FC235B52F59117200F84C74 /* NudgeWidgetSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC235B42F59117200F84C74 /* NudgeWidgetSharedStore.swift */; };
+		9FC235B62F59117200F84C74 /* NudgeWidgetSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC235B42F59117200F84C74 /* NudgeWidgetSharedStore.swift */; };
 		9FFA382D2F41091800B230B6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9FFA382C2F41091800B230B6 /* WidgetKit.framework */; };
 		9FFA382F2F41091800B230B6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9FFA382E2F41091800B230B6 /* SwiftUI.framework */; };
 		9FFA38402F41091800B230B6 /* NudgeWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9FFA382A2F41091800B230B6 /* NudgeWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -67,6 +69,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9FC235B22F590CAF00F84C74 /* NudgeDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NudgeDebug.entitlements; sourceTree = "<group>"; };
+		9FC235B32F590CD900F84C74 /* NudgeWidgetExtensionExtensionDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NudgeWidgetExtensionExtensionDebug.entitlements; sourceTree = "<group>"; };
+		9FC235B42F59117200F84C74 /* NudgeWidgetSharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NudgeWidgetSharedStore.swift; sourceTree = "<group>"; };
 		9FFA382A2F41091800B230B6 /* NudgeWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NudgeWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9FFA382C2F41091800B230B6 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		9FFA382E2F41091800B230B6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -178,6 +183,7 @@
 		NUDGEGROUP /* Nudge */ = {
 			isa = PBXGroup;
 			children = (
+				9FC235B22F590CAF00F84C74 /* NudgeDebug.entitlements */,
 				NUDGEAPP /* NudgeApp.swift */,
 				CONTENTVIEW /* ContentView.swift */,
 				ASSETS /* Assets.xcassets */,
@@ -219,6 +225,7 @@
 		PROJROOT = {
 			isa = PBXGroup;
 			children = (
+				9FC235B32F590CD900F84C74 /* NudgeWidgetExtensionExtensionDebug.entitlements */,
 				NUDGEGROUP /* Nudge */,
 				9FFA38302F41091800B230B6 /* NudgeWidgetExtension */,
 				9FFA382B2F41091800B230B6 /* Frameworks */,
@@ -265,6 +272,7 @@
 		SHAREDGROUP /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				9FC235B42F59117200F84C74 /* NudgeWidgetSharedStore.swift */,
 				ACTIVITYATTR /* NudgeActivityAttributes.swift */,
 			);
 			path = Shared;
@@ -393,6 +401,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9FC235B62F59117200F84C74 /* NudgeWidgetSharedStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -408,6 +417,7 @@
 				BFNUDGEEVENT /* NudgeEvent.swift in Sources */,
 				BFAPPSTATE /* AppState.swift in Sources */,
 				BFCALENDARSVC /* CalendarService.swift in Sources */,
+				9FC235B52F59117200F84C74 /* NudgeWidgetSharedStore.swift in Sources */,
 				BFCHECKPOINTENG /* CheckpointEngine.swift in Sources */,
 				BFCHECKPOINTSCH /* CheckpointScheduler.swift in Sources */,
 				BFEVENTOVERLAY /* EventOverlayStore.swift in Sources */,
@@ -475,10 +485,11 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = NudgeWidgetExtensionExtensionDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 36YM4P27YN;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -588,11 +599,11 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_ENTITLEMENTS = Nudge/Nudge.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Nudge/NudgeDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 36YM4P27YN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Nudge/Info.plist;

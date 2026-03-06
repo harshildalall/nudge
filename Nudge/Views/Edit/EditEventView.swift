@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 struct EditEventView: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,6 +13,8 @@ struct EditEventView: View {
     @State private var addBuffer = false
     @State private var numberOfCheckpoints: Int = 3
     @State private var alarmSoundId: String = "Rush"
+    @State private var startDate: Date = Date()
+    @State private var endDate: Date = Date().addingTimeInterval(3600)
 
     private let soundOptions = ["Glowy", "Rush", "Gentle", "Upload Your Own"]
     private var isCustomEvent: Bool { event.id.hasPrefix("custom-") }
@@ -21,10 +24,29 @@ struct EditEventView: View {
             Form {
                 Section("Event Name") {
                     HStack {
-                        TextField("Event name", text: $title)
+                        if isCustomEvent {
+                            TextField("Event name", text: $title)
+                        } else {
+                            Text(title)
+                                .foregroundColor(Theme.secondary)
+                        }
                         Image(systemName: "pencil")
-                            .foregroundColor(Theme.secondary)
+                            .foregroundColor(isCustomEvent ? Theme.secondary : Color.clear)
                     }
+                }
+                if isCustomEvent {
+                    Section("Date & Time") {
+                        DatePicker("Start", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
+                            .tint(Theme.accent)
+                        DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: [.date, .hourAndMinute])
+                            .tint(Theme.accent)
+                    }
+                } else {
+                    Section("Date & Time") {
+                        LabeledContent("Start", value: formatDateTime(event.startDate))
+                        LabeledContent("End", value: formatDateTime(event.endDate))
+                    }
+                    .foregroundColor(Theme.secondary)
                 }
                 Section("Event Type") {
                     HStack {
@@ -93,13 +115,32 @@ struct EditEventView: View {
             }
             .onAppear {
                 title = event.title
-                prepMinutes = Double(event.prepMinutes(using: presetStore.presets))
-                numberOfCheckpoints = event.numberOfCheckpoints(using: presetStore.presets)
+                startDate = event.startDate
+                endDate = event.endDate
                 selectedPresetId = event.presetId ?? presetStore.presets.first?.id
                 alarmSoundId = event.alarmSoundOverride ?? "Rush"
+                numberOfCheckpoints = event.numberOfCheckpoints(using: presetStore.presets)
+                // Detect buffer: if saved value is not a multiple of 15, it includes a 10-min buffer
                 if let ov = EventOverlayStore.shared.overlay(for: event.id),
-                   let prep = ov.prepMinutesOverride, prep > 0 {
-                    addBuffer = (prep - Int(prepMinutes)) >= 10
+                   let prepOv = ov.prepMinutesOverride, prepOv > 0 {
+                    if prepOv % 15 != 0 {
+                        addBuffer = true
+                        prepMinutes = Double(prepOv - 10)
+                    } else {
+                        addBuffer = false
+                        prepMinutes = Double(prepOv)
+                    }
+                } else {
+                    addBuffer = false
+                    prepMinutes = Double(event.prepMinutes(using: presetStore.presets))
+                }
+            }
+            .onChange(of: selectedPresetId) { newId in
+                // When preset changes, update sliders to reflect that preset's defaults
+                if let p = presetStore.presets.first(where: { $0.id == newId }) {
+                    prepMinutes = Double(p.defaultPrepMinutes)
+                    numberOfCheckpoints = p.numberOfCheckpoints
+                    addBuffer = false
                 }
             }
         }
@@ -125,11 +166,15 @@ struct EditEventView: View {
             Slider(value: $prepMinutes, in: 15...120, step: 15)
                 .tint(Theme.accent)
             HStack {
+                Text("15")
+                Spacer()
                 Text("30")
                 Spacer()
                 Text("60")
                 Spacer()
                 Text("90")
+                Spacer()
+                Text("120")
             }
             .font(Theme.caption2)
             .foregroundColor(Theme.secondary)
@@ -168,8 +213,8 @@ struct EditEventView: View {
             let e = NudgeEvent(
                 id: event.id,
                 title: title,
-                startDate: event.startDate,
-                endDate: event.endDate,
+                startDate: startDate,
+                endDate: endDate,
                 location: event.location,
                 presetId: selectedPresetId,
                 prepEnabled: event.prepEnabled,
@@ -180,5 +225,15 @@ struct EditEventView: View {
             )
             CustomEventsStore.shared.update(e)
         }
+        // Immediately refresh the widget and scheduler so changes are visible
+        CheckpointScheduler.shared.start()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    private func formatDateTime(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f.string(from: date)
     }
 }

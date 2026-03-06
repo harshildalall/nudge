@@ -43,7 +43,24 @@ final class EventRepository: ObservableObject {
                 completedCheckpoints: ov?.completedCheckpoints ?? 0
             )
         }
-        let merged = (fromCalendar + customEvents).sorted { $0.startDate < $1.startDate }
+        // Apply overlays to custom events too so edits, toggles, and progress updates are reflected.
+        let fromCustom: [NudgeEvent] = customEvents.map { event in
+            let ov = overlayStore.overlay(for: event.id)
+            return NudgeEvent(
+                id: event.id,
+                title: event.title,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                location: event.location,
+                presetId: ov?.presetId ?? event.presetId,
+                prepEnabled: ov?.prepEnabled ?? event.prepEnabled,
+                prepMinutesOverride: ov?.prepMinutesOverride ?? event.prepMinutesOverride,
+                checkpointsOverride: ov?.checkpointsOverride ?? event.checkpointsOverride,
+                alarmSoundOverride: ov?.alarmSoundOverride ?? event.alarmSoundOverride,
+                completedCheckpoints: ov?.completedCheckpoints ?? event.completedCheckpoints
+            )
+        }
+        let merged = (fromCalendar + fromCustom).sorted { $0.startDate < $1.startDate }
         nudgeEvents = merged
     }
 
@@ -81,7 +98,9 @@ final class EventRepository: ObservableObject {
             guard event.prepEnabled else { return false }
             let prepMins = event.prepMinutes(using: presets)
             let prepStart = event.startDate.addingTimeInterval(-Double(prepMins) * 60)
-            return now >= prepStart && now < event.startDate
+            // Allow 5-minute grace period after event start so events set to "now" still appear.
+            let activeEnd = event.startDate.addingTimeInterval(5 * 60)
+            return now >= prepStart && now < activeEnd
         }
     }
 

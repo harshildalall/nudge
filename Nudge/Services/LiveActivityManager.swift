@@ -6,7 +6,7 @@ final class LiveActivityManager {
     static let shared = LiveActivityManager()
 
     func startOrUpdate(event: NudgeEvent, checkpoints: [Checkpoint], completed: Int, nextCheckpoint: Checkpoint?, eventTypeLabel: String = "EVENT") {
-        let urgency = nextCheckpoint?.isLeaveNow == true ? "LEAVE NOW" : "Let's get up now..."
+        let urgency = UrgencyMessages.message(checkpointIndex: completed, total: checkpoints.count)
         let state = NudgeActivityAttributes.ContentState(
             currentCheckpointIndex: completed,
             totalCheckpoints: checkpoints.count,
@@ -26,7 +26,7 @@ final class LiveActivityManager {
             if let current = Activity<NudgeActivityAttributes>.activities.first(where: { $0.attributes.eventName == event.title && $0.attributes.eventStartTime == event.startDate }) {
                 await current.update(content)
             } else {
-                _ = try? await Activity.request(attributes: attributes, content: content, pushType: nil)
+                _ = try? Activity.request(attributes: attributes, content: content, pushType: nil)
             }
         }
     }

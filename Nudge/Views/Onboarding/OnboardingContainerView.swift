@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct OnboardingContainerView: View {
     @StateObject private var appState = AppState.shared
@@ -47,9 +48,7 @@ struct OnboardingContainerView: View {
                     VStack(spacing: 12) {
                         Text("never lose track of time getting ready to leave with...")
                             .multilineTextAlignment(.center)
-                        Image(systemName: "alarm.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(Theme.primary)
+                        appLogoImage
                         Text("nudge")
                             .font(.system(size: 24, weight: .medium))
                     }
@@ -92,12 +91,24 @@ struct OnboardingContainerView: View {
         }
     }
 
-    private var launchScreen: some View {
-        VStack(spacing: 20) {
-            Spacer()
+    @ViewBuilder
+    private var appLogoImage: some View {
+        if let icon = UIImage(named: "AppIcon") {
+            Image(uiImage: icon)
+                .resizable()
+                .frame(width: 80, height: 80)
+                .cornerRadius(18)
+        } else {
             Image(systemName: "alarm.fill")
                 .font(.system(size: 56))
                 .foregroundColor(Theme.primary)
+        }
+    }
+
+    private var launchScreen: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            appLogoImage
             Text("nudge")
                 .font(.system(size: 26, weight: .medium))
                 .foregroundColor(Theme.primary)
