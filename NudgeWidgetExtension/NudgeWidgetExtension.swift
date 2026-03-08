@@ -142,10 +142,7 @@ struct NudgeWidgetExtensionEntryView: View {
                 progressSection
             }
 
-            HStack(spacing: 6) {
-                dismissButton
-                bufferButton
-            }
+            dismissButton
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -220,21 +217,6 @@ struct NudgeWidgetExtensionEntryView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 999, style: .continuous)
                         .fill(Color.white)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var bufferButton: some View {
-        Button(intent: AddBufferIntent()) {
-            Text("+15 min")
-                .font(.caption2)
-                .fontWeight(.medium)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: 999, style: .continuous)
-                        .fill(Color.white.opacity(0.7))
                 )
         }
         .buttonStyle(.plain)

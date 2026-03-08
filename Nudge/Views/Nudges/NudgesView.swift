@@ -30,7 +30,7 @@ struct NudgesView: View {
         let next = CheckpointEngine.nextCheckpoint(checkpoints, now: timeNow)
         let completed = checkpoints.filter { $0.at <= timeNow }.count
         let ringProgress = timeProgress(event: event)
-        let urgencyMessage = UrgencyMessages.message(checkpointIndex: completed, total: checkpoints.count)
+        let urgencyMessage = UrgencyMessages.messageForProgress(ringProgress, variant: completed)
 
         return ScrollView {
             VStack(spacing: 24) {
@@ -47,7 +47,7 @@ struct NudgesView: View {
 
                 Text(urgencyMessage)
                     .font(Theme.title)
-                    .foregroundColor(completed >= checkpoints.count - 1 && !checkpoints.isEmpty ? Theme.urgency : Theme.primary)
+                    .foregroundColor(ringProgress >= 0.75 ? Theme.urgency : Theme.primary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
@@ -69,16 +69,6 @@ struct NudgesView: View {
                     .padding(.vertical, 14)
                     .background(Theme.accent)
                     .cornerRadius(12)
-
-                    Button("+ 15 min buffer") {
-                        addBuffer(to: event)
-                    }
-                    .font(Theme.callout)
-                    .foregroundColor(Theme.accent)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(Theme.accent.opacity(0.12))
-                    .cornerRadius(10)
 
                     Button("Cancel Event") {
                         markReady(event)
@@ -198,19 +188,6 @@ struct NudgesView: View {
 
     private func markReady(_ event: NudgeEvent) {
         CheckpointScheduler.shared.dismissActiveEvent(event)
-    }
-
-    private func addBuffer(to event: NudgeEvent) {
-        let currentPrep = event.prepMinutes(using: presetStore.presets)
-        let newPrep = currentPrep + 15
-        repo.updateOverlay(
-            for: event,
-            prepMinutes: newPrep,
-            checkpoints: event.numberOfCheckpoints(using: presetStore.presets),
-            alarmSound: event.alarmSoundOverride,
-            presetId: event.presetId
-        )
-        CheckpointScheduler.shared.start()
     }
 
     private func formatTime(_ d: Date) -> String {

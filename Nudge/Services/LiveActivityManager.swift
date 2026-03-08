@@ -5,8 +5,8 @@ import ActivityKit
 final class LiveActivityManager {
     static let shared = LiveActivityManager()
 
-    func startOrUpdate(event: NudgeEvent, checkpoints: [Checkpoint], completed: Int, nextCheckpoint: Checkpoint?, eventTypeLabel: String = "EVENT") {
-        let urgency = UrgencyMessages.message(checkpointIndex: completed, total: checkpoints.count)
+    func startOrUpdate(event: NudgeEvent, checkpoints: [Checkpoint], completed: Int, nextCheckpoint: Checkpoint?, eventTypeLabel: String = "EVENT", timeProgress: Double = 0) {
+        let urgency = UrgencyMessages.messageForProgress(timeProgress, variant: completed)
         let state = NudgeActivityAttributes.ContentState(
             currentCheckpointIndex: completed,
             totalCheckpoints: checkpoints.count,

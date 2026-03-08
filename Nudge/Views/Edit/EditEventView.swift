@@ -135,7 +135,7 @@ struct EditEventView: View {
                     prepMinutes = Double(event.prepMinutes(using: presetStore.presets))
                 }
             }
-            .onChange(of: selectedPresetId) { newId in
+            .onChange(of: selectedPresetId) { _, newId in
                 // When preset changes, update sliders to reflect that preset's defaults
                 if let p = presetStore.presets.first(where: { $0.id == newId }) {
                     prepMinutes = Double(p.defaultPrepMinutes)

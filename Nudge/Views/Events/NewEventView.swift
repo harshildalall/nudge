@@ -68,7 +68,18 @@ struct NewEventView: View {
                 }
             }
             .onAppear {
-                selectedPresetId = presetStore.presets.first?.id
+                if let first = presetStore.presets.first {
+                    selectedPresetId = first.id
+                    prepMinutes = Double(first.defaultPrepMinutes)
+                    numberOfCheckpoints = first.numberOfCheckpoints
+                }
+            }
+            .onChange(of: selectedPresetId) { _, newId in
+                if let p = presetStore.presets.first(where: { $0.id == newId }) {
+                    prepMinutes = Double(p.defaultPrepMinutes)
+                    numberOfCheckpoints = p.numberOfCheckpoints
+                    addBuffer = false
+                }
             }
         }
     }

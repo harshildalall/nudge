@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct OnboardingContainerView: View {
     @StateObject private var appState = AppState.shared
@@ -91,18 +90,11 @@ struct OnboardingContainerView: View {
         }
     }
 
-    @ViewBuilder
     private var appLogoImage: some View {
-        if let icon = UIImage(named: "AppIcon") {
-            Image(uiImage: icon)
-                .resizable()
-                .frame(width: 80, height: 80)
-                .cornerRadius(18)
-        } else {
-            Image(systemName: "alarm.fill")
-                .font(.system(size: 56))
-                .foregroundColor(Theme.primary)
-        }
+        Image("AppLogo")
+            .resizable()
+            .frame(width: 80, height: 80)
+            .cornerRadius(18)
     }
 
     private var launchScreen: some View {

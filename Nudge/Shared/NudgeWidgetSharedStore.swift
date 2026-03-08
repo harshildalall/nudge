@@ -42,15 +42,15 @@ enum UrgencyMessages {
         "Ready? Go!"
     ]
 
-    /// Returns a deterministic urgency message for a given checkpoint index and total count.
-    static func message(checkpointIndex: Int, total: Int) -> String {
-        guard total > 0 else { return early[0] }
-        if checkpointIndex >= total - 1 {
-            return final[checkpointIndex % final.count]
-        } else if checkpointIndex == 0 {
-            return early[0 % early.count]
+    /// Returns a message based on time progress through the prep window (0 = just started, 1 = event time).
+    /// `variant` is used to cycle through messages within each category (use completed checkpoint count).
+    static func messageForProgress(_ progress: Double, variant: Int) -> String {
+        if progress < 0.4 {
+            return early[variant % early.count]
+        } else if progress < 0.75 {
+            return mid[variant % mid.count]
         } else {
-            return mid[(checkpointIndex - 1) % mid.count]
+            return final[variant % final.count]
         }
     }
 }
@@ -111,18 +111,4 @@ enum NudgeWidgetSharedStore {
         sharedDefaults?.removeObject(forKey: dismissKey)
     }
 
-    // MARK: Buffer flag (written by widget Add Buffer button, read by main app on next tick)
-    private static let bufferKey = "nudge_buffer_requested"
-
-    static func requestBuffer() {
-        sharedDefaults?.set(true, forKey: bufferKey)
-    }
-
-    static func isBufferRequested() -> Bool {
-        sharedDefaults?.bool(forKey: bufferKey) ?? false
-    }
-
-    static func clearBufferRequest() {
-        sharedDefaults?.removeObject(forKey: bufferKey)
-    }
 }

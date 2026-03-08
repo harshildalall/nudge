@@ -25,15 +25,3 @@ struct DismissNudgeIntent: AppIntent {
     }
 }
 
-/// Fired when the user taps "+ Buffer" on the home screen widget.
-/// Writes a buffer flag to the shared App Group so the main app adds 15 min on next tick.
-struct AddBufferIntent: AppIntent {
-    static var title: LocalizedStringResource = "Add Buffer Time"
-    static var isDiscoverable: Bool = false
-
-    func perform() async throws -> some IntentResult {
-        NudgeWidgetSharedStore.requestBuffer()
-        WidgetCenter.shared.reloadAllTimelines()
-        return .result()
-    }
-}
