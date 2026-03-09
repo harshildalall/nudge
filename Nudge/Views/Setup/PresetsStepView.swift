@@ -1,29 +1,51 @@
 import SwiftUI
 
 struct PresetsStepView: View {
+    let onBack: () -> Void
+    let onNext: () -> Void
+
     @StateObject private var presetStore = PresetStore.shared
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("presets")
-                    .font(Theme.caption2)
-                    .foregroundColor(Theme.secondary)
-                Text("step 2")
-                    .font(Theme.caption2)
-                    .foregroundColor(Theme.secondary)
-                Text("Set prep-time presets")
-                    .font(Theme.title)
-                    .foregroundColor(Theme.primary)
-                Text("Manage how your alarms are generated.")
-                    .font(Theme.subheadline)
-                    .foregroundColor(Theme.secondary)
+        ZStack {
+            NudgeBackground()
 
-                ForEach(presetStore.presets) { preset in
-                    PresetRowView(preset: preset)
+            VStack(spacing: 0) {
+                // Back button
+                HStack {
+                    NudgeBackButton(action: onBack)
+                    Spacer()
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+                // Header
+                VStack(spacing: 6) {
+                    Text("Step 2")
+                        .font(.albertSans(15))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                    Text("Set Nudge Presets")
+                        .font(.albertSans(26, weight: .bold))
+                        .foregroundColor(Color(hex: "1A2A36"))
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 24)
+
+                // Preset rows
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(presetStore.presets) { preset in
+                            PresetRowView(preset: preset)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+
+                Spacer()
+
+                NudgePrimaryButton(title: "Next", action: onNext)
+                    .padding(.bottom, 48)
             }
-            .padding(20)
         }
     }
 }
@@ -33,41 +55,55 @@ struct PresetRowView: View {
     @State private var showEdit = false
 
     var body: some View {
-        HStack {
-            Image(systemName: iconNameForPreset(preset.iconName))
-                .font(.system(size: 18))
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 16) {
+            Image(systemName: iconName(for: preset.iconName))
+                .font(.albertSans(22, weight: .light))
+                .foregroundColor(Color(hex: "7A92A5"))
+                .frame(width: 32, height: 32)
+
+            VStack(alignment: .leading, spacing: 3) {
                 Text(preset.name)
-                    .font(Theme.headline)
-                Text("Prep Time: \(preset.defaultPrepMinutes) min · Alarms: \(preset.numberOfCheckpoints)")
-                    .font(Theme.caption2)
-                    .foregroundColor(Theme.secondary)
+                    .font(.albertSans(16, weight: .bold))
+                    .foregroundColor(Color(hex: "1A2A36"))
+
+                HStack(spacing: 14) {
+                    Text("Prep Time: \(preset.defaultPrepMinutes) min")
+                        .font(.albertSans(13))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                    Text("Alarms: \(preset.numberOfCheckpoints)")
+                        .font(.albertSans(13))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                }
             }
+
             Spacer()
+
             Button(action: { showEdit = true }) {
                 Image(systemName: "pencil")
-                    .font(.system(size: 14))
-                    .foregroundColor(Theme.primary)
+                    .font(.albertSans(15))
+                    .foregroundColor(Color(hex: "C0D0DC"))
             }
         }
-        .padding(12)
-        .background(Color.gray.opacity(0.08))
-        .cornerRadius(10)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 15)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 2)
         .sheet(isPresented: $showEdit) {
             EditPresetView(preset: preset)
         }
     }
 
-    private func iconNameForPreset(_ name: String) -> String {
+    private func iconName(for name: String) -> String {
         switch name.lowercased() {
         case "graduationcap": return "graduationcap"
-        case "doc.text": return "doc.text"
-        case "person.2": return "person.2"
-        case "star": return "star"
-        case "dumbbell": return "dumbbell"
-        case "briefcase": return "briefcase"
-        default: return "calendar"
+        case "party.popper":  return "party.popper"
+        case "doc.text":      return "doc.text"
+        case "person.2":      return "person.2"
+        case "star":          return "star"
+        case "dumbbell":      return "dumbbell"
+        case "briefcase":     return "briefcase"
+        default:              return "calendar"
         }
     }
 }

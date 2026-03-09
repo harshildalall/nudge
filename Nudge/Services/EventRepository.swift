@@ -114,6 +114,9 @@ final class EventRepository: ObservableObject {
             alarmSoundOverride: event.alarmSoundOverride,
             completedCheckpoints: 0
         ), eventId: event.id)
+        // Immediately reflect in nudgeEvents so the scheduler can see the event
+        // before the Combine pipeline fires its async rebuild.
+        nudgeEvents = (nudgeEvents + [event]).sorted { $0.startDate < $1.startDate }
     }
 
     func deleteEvent(_ event: NudgeEvent) {

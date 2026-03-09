@@ -100,7 +100,7 @@ struct NudgesView: View {
                     .font(Theme.caption2)
                     .foregroundColor(Theme.secondary)
                 CountdownView(target: next.at)
-                    .font(.system(size: 32, weight: .medium, design: .monospaced))
+                    .font(.albertSans(32, weight: .medium))
                     .foregroundColor(Theme.primary)
             }
         }

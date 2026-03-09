@@ -44,25 +44,38 @@ struct EventsListView: View {
         }
     }
 
+    private var eventsForSelectedDate: [NudgeEvent] {
+        repo.nudgeEvents.filter {
+            Calendar.current.isDate($0.startDate, inSameDayAs: selectedDate)
+        }
+    }
+
     private var eventListContent: some View {
         VStack(spacing: 0) {
             daySelector
-            List {
-                ForEach(repo.eventsGroupedByDate(), id: \.0) { sectionTitle, events in
-                    Section(sectionTitle) {
-                        ForEach(events) { event in
-                            EventRowView(
-                                event: event,
-                                onTogglePrep: { repo.togglePrep(for: event) },
-                                onTap: { showEditEvent = event }
-                            )
-                            .listRowBackground(Color(.systemGroupedBackground))
-                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-                        }
+            if eventsForSelectedDate.isEmpty {
+                VStack(spacing: 12) {
+                    Spacer()
+                    Text("No events on this day")
+                        .font(Theme.headline)
+                        .foregroundColor(Theme.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                List {
+                    ForEach(eventsForSelectedDate) { event in
+                        EventRowView(
+                            event: event,
+                            onTogglePrep: { repo.togglePrep(for: event) },
+                            onTap: { showEditEvent = event }
+                        )
+                        .listRowBackground(Color(.systemGroupedBackground))
+                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                     }
                 }
+                .listStyle(.insetGrouped)
             }
-            .listStyle(.insetGrouped)
         }
     }
 
@@ -194,13 +207,13 @@ struct EventRowView: View {
                 }
                 HStack(alignment: .center) {
                     Image(systemName: iconName(for: event))
-                        .font(.system(size: 16))
+                        .font(.albertSans(16))
                         .foregroundColor(Theme.secondary)
                     Text(event.title)
                         .font(Theme.headline)
                         .foregroundColor(Theme.primary)
                     Image(systemName: "pencil")
-                        .font(.system(size: 12))
+                        .font(.albertSans(12))
                         .foregroundColor(Theme.secondary)
                     Spacer()
                     Toggle("", isOn: Binding(
