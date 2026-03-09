@@ -36,9 +36,11 @@ extension Color {
     }
 
     static let nudgeButton = Color(hex: "7A92A5")
+    /// Light blue card surface used throughout the app
+    static let cardSurface = Color(hex: "E2EDF5")
 }
 
-// MARK: - Shared onboarding components
+// MARK: - Shared background components
 struct NudgeBackground: View {
     var body: some View {
         LinearGradient(
@@ -47,6 +49,29 @@ struct NudgeBackground: View {
             endPoint: .bottom
         )
         .ignoresSafeArea()
+    }
+}
+
+/// Light blue-to-white gradient used across the main app tabs and sheets.
+struct AppBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [Color(hex: "D5E4EF"), Color(hex: "EEF3F8"), Color.white],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+}
+
+/// Gradient fill used for progress bars (light → dark blue, left → right).
+struct NudgeProgressGradient: View {
+    var body: some View {
+        LinearGradient(
+            colors: [Color(hex: "B5CCE0"), Color(hex: "3D6178")],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
     }
 }
 

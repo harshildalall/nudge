@@ -11,7 +11,6 @@ struct PresetsStepView: View {
             NudgeBackground()
 
             VStack(spacing: 0) {
-                // Back button
                 HStack {
                     NudgeBackButton(action: onBack)
                     Spacer()
@@ -19,19 +18,19 @@ struct PresetsStepView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
-                // Header
-                VStack(spacing: 6) {
+                // Header — same size & weight as CalendarSync step
+                VStack(spacing: 4) {
                     Text("Step 2")
-                        .font(.albertSans(15))
+                        .font(.albertSans(24, weight: .semibold))
                         .foregroundColor(Color(hex: "8A9FAF"))
                     Text("Set Nudge Presets")
-                        .font(.albertSans(26, weight: .bold))
+                        .font(.albertSans(24, weight: .semibold))
                         .foregroundColor(Color(hex: "1A2A36"))
                 }
                 .padding(.top, 20)
                 .padding(.bottom, 24)
 
-                // Preset rows
+                // Preset rows — glossy cards
                 ScrollView {
                     VStack(spacing: 10) {
                         ForEach(presetStore.presets) { preset in
@@ -57,7 +56,7 @@ struct PresetRowView: View {
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: iconName(for: preset.iconName))
-                .font(.albertSans(22, weight: .light))
+                .font(.system(size: 22, weight: .light))
                 .foregroundColor(Color(hex: "7A92A5"))
                 .frame(width: 32, height: 32)
 
@@ -80,17 +79,33 @@ struct PresetRowView: View {
 
             Button(action: { showEdit = true }) {
                 Image(systemName: "pencil")
-                    .font(.albertSans(15))
+                    .font(.system(size: 15))
                     .foregroundColor(Color(hex: "C0D0DC"))
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 15)
-        .background(Color.white)
+        .background(glossyCard)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 2)
+        .shadow(color: Color(hex: "7A92A5").opacity(0.18), radius: 12, x: 0, y: 5)
+        .shadow(color: Color.white.opacity(0.9), radius: 1, x: 0, y: -1)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+        )
         .sheet(isPresented: $showEdit) {
             EditPresetView(preset: preset)
+        }
+    }
+
+    private var glossyCard: some View {
+        ZStack {
+            Color.cardSurface
+            LinearGradient(
+                colors: [Color.white.opacity(0.55), Color.clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
         }
     }
 

@@ -12,7 +12,7 @@ struct EditEventView: View {
     @State private var prepMinutes: Double = 30
     @State private var addBuffer = false
     @State private var numberOfCheckpoints: Int = 3
-    @State private var alarmSoundId: String = "Rush"
+    @State private var alarmSoundId: String = "Glowy"
     @State private var startDate: Date = Date()
     @State private var endDate: Date = Date().addingTimeInterval(3600)
 
@@ -20,184 +20,280 @@ struct EditEventView: View {
     private var isCustomEvent: Bool { event.id.hasPrefix("custom-") }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Event Name") {
+        ZStack {
+            AppBackground()
+
+            VStack(spacing: 0) {
+                // Header
+                ZStack {
                     HStack {
-                        if isCustomEvent {
-                            TextField("Event name", text: $title)
-                        } else {
-                            Text(title)
-                                .foregroundColor(Theme.secondary)
-                        }
-                        Image(systemName: "pencil")
-                            .foregroundColor(isCustomEvent ? Theme.secondary : Color.clear)
-                    }
-                }
-                if isCustomEvent {
-                    Section("Date & Time") {
-                        DatePicker("Start", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
-                            .tint(Theme.accent)
-                        DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: [.date, .hourAndMinute])
-                            .tint(Theme.accent)
-                    }
-                } else {
-                    Section("Date & Time") {
-                        LabeledContent("Start", value: formatDateTime(event.startDate))
-                        LabeledContent("End", value: formatDateTime(event.endDate))
-                    }
-                    .foregroundColor(Theme.secondary)
-                }
-                Section("Event Type") {
-                    HStack {
-                        Picker("", selection: $selectedPresetId) {
-                            ForEach(presetStore.presets) { p in
-                                Text(p.name).tag(p.id as UUID?)
-                            }
-                        }
-                        .labelsHidden()
+                        Button("Cancel") { dismiss() }
+                            .font(.albertSans(15))
+                            .foregroundColor(Color(hex: "8A9FAF"))
                         Spacer()
-                        Image(systemName: "pencil")
-                            .foregroundColor(Theme.secondary)
                     }
+                    Text("Edit Event")
+                        .font(.albertSans(17, weight: .semibold))
+                        .foregroundColor(Color(hex: "1A2A36"))
                 }
-                Section {
-                    prepTimeSection
-                } header: { Text("Prep Time") } footer: {
-                    Text("Select time before event to start alarms.")
-                        .font(Theme.caption2)
-                }
-                Section("Number of Alarms") {
-                    alarmCountButtons
-                }
-                Section("Alarm Sound") {
-                    ForEach(soundOptions, id: \.self) { id in
-                        Button(action: { alarmSoundId = id }) {
-                            HStack {
-                                Text(id)
-                                Spacer()
-                                if alarmSoundId == id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(Theme.accent)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+                .background(Color.clear)
+
+                ScrollView {
+                    VStack(spacing: 14) {
+                        // Event Name
+                        formCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("EVENT NAME")
+                                    .font(.albertSans(11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8A9FAF"))
+                                HStack {
+                                    if isCustomEvent {
+                                        TextField("Event name", text: $title)
+                                            .font(.albertSans(16))
+                                            .foregroundColor(Color(hex: "1A2A36"))
+                                    } else {
+                                        Text(title)
+                                            .font(.albertSans(16))
+                                            .foregroundColor(Color(hex: "2C3E50"))
+                                    }
+                                    Spacer()
+                                    Image(systemName: "pencil")
+                                        .foregroundColor(isCustomEvent ? Color(hex: "C0D0DC") : Color.clear)
                                 }
                             }
-                            .padding(.vertical, 4)
-                            .background(alarmSoundId == id ? Theme.accent.opacity(0.12) : Color.clear)
-                            .cornerRadius(8)
                         }
-                        .foregroundColor(Theme.primary)
-                    }
-                }
-                if isCustomEvent {
-                    Section {
-                        Button("Delete event", role: .destructive) {
-                            repo.deleteEvent(event)
-                            dismiss()
+
+                        // Date & Time
+                        formCard {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("DATE & TIME")
+                                    .font(.albertSans(11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8A9FAF"))
+                                if isCustomEvent {
+                                    DatePicker("Start", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
+                                        .font(.albertSans(15))
+                                        .tint(Color.nudgeButton)
+                                    Divider()
+                                    DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: [.date, .hourAndMinute])
+                                        .font(.albertSans(15))
+                                        .tint(Color.nudgeButton)
+                                } else {
+                                    HStack {
+                                        Text("Start")
+                                            .font(.albertSans(15))
+                                            .foregroundColor(Color(hex: "2C3E50"))
+                                        Spacer()
+                                        Text(formatDateTime(event.startDate))
+                                            .font(.albertSans(14))
+                                            .foregroundColor(Color(hex: "8A9FAF"))
+                                    }
+                                    Divider()
+                                    HStack {
+                                        Text("End")
+                                            .font(.albertSans(15))
+                                            .foregroundColor(Color(hex: "2C3E50"))
+                                        Spacer()
+                                        Text(formatDateTime(event.endDate))
+                                            .font(.albertSans(14))
+                                            .foregroundColor(Color(hex: "8A9FAF"))
+                                    }
+                                }
+                            }
                         }
+
+                        // Event Type (Preset picker)
+                        formCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("EVENT TYPE")
+                                    .font(.albertSans(11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8A9FAF"))
+                                HStack {
+                                    Picker("", selection: $selectedPresetId) {
+                                        ForEach(presetStore.presets) { p in
+                                            Text(p.name).tag(p.id as UUID?)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .font(.albertSans(16))
+                                    Spacer()
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "C0D0DC"))
+                                }
+                            }
+                        }
+                        .onChange(of: selectedPresetId) { _, newId in
+                            if let p = presetStore.presets.first(where: { $0.id == newId }) {
+                                prepMinutes = Double(p.defaultPrepMinutes)
+                                numberOfCheckpoints = p.numberOfCheckpoints
+                                addBuffer = false
+                            }
+                        }
+
+                        // Prep Time
+                        formCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text("PREP TIME")
+                                        .font(.albertSans(11, weight: .semibold))
+                                        .foregroundColor(Color(hex: "8A9FAF"))
+                                    Spacer()
+                                    Image(systemName: "questionmark.circle")
+                                        .foregroundColor(Color(hex: "C0D0DC"))
+                                        .font(.system(size: 14))
+                                }
+                                SliderWithBubble(value: $prepMinutes, range: 15...120, step: 15)
+
+                                Toggle("Add 10 min buffer time", isOn: $addBuffer)
+                                    .font(.albertSans(14))
+                                    .tint(Color.nudgeButton)
+                            }
+                        }
+
+                        // Number of Alarms
+                        formCard {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("NUMBER OF ALARMS")
+                                    .font(.albertSans(11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8A9FAF"))
+                                HStack(spacing: 8) {
+                                    ForEach(1...5, id: \.self) { n in
+                                        Button(action: { numberOfCheckpoints = n }) {
+                                            Text("\(n)")
+                                                .font(.albertSans(15, weight: .semibold))
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 10)
+                                                .background(numberOfCheckpoints == n ? Color.nudgeButton : Color(hex: "EDF1F5"))
+                                                .foregroundColor(numberOfCheckpoints == n ? .white : Color(hex: "2C3E50"))
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Alarm Sound
+                        formCard {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("ALARM SOUND")
+                                    .font(.albertSans(11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8A9FAF"))
+                                VStack(spacing: 0) {
+                                    ForEach(Array(soundOptions.enumerated()), id: \.offset) { idx, option in
+                                        Button(action: { alarmSoundId = option }) {
+                                            HStack {
+                                                Text(option)
+                                                    .font(.albertSans(15))
+                                                    .foregroundColor(Color(hex: "2C3E50"))
+                                                Spacer()
+                                                if alarmSoundId == option {
+                                                    Image(systemName: "checkmark.circle.fill")
+                                                        .foregroundColor(Color.nudgeButton)
+                                                } else {
+                                                    Circle()
+                                                        .stroke(Color(hex: "C0D0DC"), lineWidth: 1.5)
+                                                        .frame(width: 20, height: 20)
+                                                }
+                                            }
+                                            .padding(.vertical, 12)
+                                        }
+                                        if idx < soundOptions.count - 1 {
+                                            Divider()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Delete (custom events only)
+                        if isCustomEvent {
+                            Button("Delete event") {
+                                repo.deleteEvent(event)
+                                dismiss()
+                            }
+                            .font(.albertSans(15))
+                            .foregroundColor(.red.opacity(0.8))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(
+                                ZStack {
+                                    Color.cardSurface
+                                    LinearGradient(colors: [Color.white.opacity(0.55), Color.clear], startPoint: .top, endPoint: .bottom)
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .shadow(color: Color(hex: "7A92A5").opacity(0.18), radius: 12, x: 0, y: 5)
+                            .shadow(color: Color.white.opacity(0.9), radius: 1, x: 0, y: -1)
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.7), lineWidth: 1))
+                        }
+
+                        Spacer().frame(height: 8)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 100)
                 }
-            }
-            .navigationTitle("Edit Event")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(Theme.secondary)
-                }
-                ToolbarItem(placement: .confirmationAction) {
+
+                // Save Changes pill button
+                VStack {
                     Button("Save Changes") {
                         save()
                         dismiss()
                     }
-                    .fontWeight(.semibold)
-                    .foregroundColor(Theme.accent)
+                    .font(.albertSans(17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.nudgeButton)
+                    .clipShape(Capsule())
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 32)
+                    .padding(.top, 12)
                 }
+                .background(Color.clear)
             }
-            .onAppear {
-                title = event.title
-                startDate = event.startDate
-                endDate = event.endDate
-                selectedPresetId = event.presetId ?? presetStore.presets.first?.id
-                alarmSoundId = event.alarmSoundOverride ?? "Rush"
-                numberOfCheckpoints = event.numberOfCheckpoints(using: presetStore.presets)
-                // Detect buffer: if saved value is not a multiple of 15, it includes a 10-min buffer
-                if let ov = EventOverlayStore.shared.overlay(for: event.id),
-                   let prepOv = ov.prepMinutesOverride, prepOv > 0 {
-                    if prepOv % 15 != 0 {
-                        addBuffer = true
-                        prepMinutes = Double(prepOv - 10)
-                    } else {
-                        addBuffer = false
-                        prepMinutes = Double(prepOv)
-                    }
+        }
+        .onAppear {
+            title = event.title
+            startDate = event.startDate
+            endDate = event.endDate
+            selectedPresetId = event.presetId ?? presetStore.presets.first?.id
+            alarmSoundId = event.alarmSoundOverride ?? "Glowy"
+            numberOfCheckpoints = event.numberOfCheckpoints(using: presetStore.presets)
+            if let ov = EventOverlayStore.shared.overlay(for: event.id),
+               let prepOv = ov.prepMinutesOverride, prepOv > 0 {
+                if prepOv % 15 != 0 {
+                    addBuffer = true
+                    prepMinutes = Double(prepOv - 10)
                 } else {
                     addBuffer = false
-                    prepMinutes = Double(event.prepMinutes(using: presetStore.presets))
+                    prepMinutes = Double(prepOv)
                 }
-            }
-            .onChange(of: selectedPresetId) { _, newId in
-                // When preset changes, update sliders to reflect that preset's defaults
-                if let p = presetStore.presets.first(where: { $0.id == newId }) {
-                    prepMinutes = Double(p.defaultPrepMinutes)
-                    numberOfCheckpoints = p.numberOfCheckpoints
-                    addBuffer = false
-                }
+            } else {
+                addBuffer = false
+                prepMinutes = Double(event.prepMinutes(using: presetStore.presets))
             }
         }
     }
 
-    private var prepTimeSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Prep Time")
-                Spacer()
-                Image(systemName: "questionmark.circle")
-                    .foregroundColor(Theme.secondary)
-            }
-            HStack {
-                Text("\(Int(prepMinutes))")
-                    .font(Theme.title)
-                    .foregroundColor(Theme.accent)
-                    .padding(8)
-                    .background(Theme.accent.opacity(0.15))
-                    .clipShape(Circle())
-                Spacer()
-            }
-            Slider(value: $prepMinutes, in: 15...120, step: 15)
-                .tint(Theme.accent)
-            HStack {
-                Text("15")
-                Spacer()
-                Text("30")
-                Spacer()
-                Text("60")
-                Spacer()
-                Text("90")
-                Spacer()
-                Text("120")
-            }
-            .font(Theme.caption2)
-            .foregroundColor(Theme.secondary)
-            Toggle("Add 10 min buffer time", isOn: $addBuffer)
-                .tint(Theme.accent)
-        }
-    }
-
-    private var alarmCountButtons: some View {
-        HStack(spacing: 8) {
-            ForEach(1...5, id: \.self) { n in
-                Button(action: { numberOfCheckpoints = n }) {
-                    Text("\(n)")
-                        .font(Theme.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(numberOfCheckpoints == n ? Theme.accent : Color.gray.opacity(0.15))
-                        .foregroundColor(numberOfCheckpoints == n ? .white : Theme.primary)
-                        .cornerRadius(8)
+    private func formCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(
+                ZStack {
+                    Color.cardSurface
+                    LinearGradient(colors: [Color.white.opacity(0.55), Color.clear], startPoint: .top, endPoint: .bottom)
                 }
-                .buttonStyle(.plain)
-            }
-        }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: Color(hex: "7A92A5").opacity(0.18), radius: 12, x: 0, y: 5)
+            .shadow(color: Color.white.opacity(0.9), radius: 1, x: 0, y: -1)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.7), lineWidth: 1))
     }
 
     private func save() {
@@ -225,7 +321,6 @@ struct EditEventView: View {
             )
             CustomEventsStore.shared.update(e)
         }
-        // Immediately refresh the widget and scheduler so changes are visible
         CheckpointScheduler.shared.start()
         WidgetCenter.shared.reloadAllTimelines()
     }

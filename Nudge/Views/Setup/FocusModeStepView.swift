@@ -19,20 +19,20 @@ struct FocusModeStepView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
-                // Header
-                VStack(spacing: 6) {
+                // Header — same size & weight as other steps
+                VStack(spacing: 4) {
                     Text("Step 3")
-                        .font(.albertSans(15))
+                        .font(.albertSans(24, weight: .semibold))
                         .foregroundColor(Color(hex: "8A9FAF"))
                     Text("Override Focus Mode")
-                        .font(.albertSans(26, weight: .bold))
+                        .font(.albertSans(24, weight: .semibold))
                         .foregroundColor(Color(hex: "1A2A36"))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 20)
                 .padding(.bottom, 40)
 
-                // Numbered steps
+                // Numbered steps — center the block, keep circles/text aligned
                 VStack(alignment: .leading, spacing: 24) {
                     ForEach(Array(steps.enumerated()), id: \.offset) { index, text in
                         HStack(spacing: 18) {
@@ -50,7 +50,8 @@ struct FocusModeStepView: View {
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal, 28)
 
                 Spacer()

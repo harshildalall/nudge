@@ -7,5 +7,17 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>AlbertSans-Regular.ttf</string>
+		<string>AlbertSans-Medium.ttf</string>
+		<string>AlbertSans-SemiBold.ttf</string>
+		<string>AlbertSans-Bold.ttf</string>
+		<string>AlbertSans-Light.ttf</string>
+		<string>AlbertSans-ExtraLight.ttf</string>
+		<string>AlbertSans-Italic.ttf</string>
+		<string>AlbertSans-BoldItalic.ttf</string>
+		<string>AlbertSans-SemiBoldItalic.ttf</string>
+	</array>
 </dict>
 </plist>

@@ -11,19 +11,14 @@ struct OnboardingContainerView: View {
                 Spacer()
 
                 VStack(spacing: 20) {
-                    Image(systemName: "alarm")
-                        .font(.system(size: 100, weight: .thin)) // SF Symbol — keep system for weight rendering
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(hex: "8FA8BC"), Color(hex: "5C7A91")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: Color(hex: "7A92A5").opacity(0.3), radius: 16, x: 0, y: 8)
+                    Image("NudgeLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 225, height: 225)
+                        .blendMode(.multiply)
 
-                    Text("nudge")
-                        .font(.albertSans(28))
+                    Text("Nudge")
+                        .font(.albertSans(28, weight: .bold))
                         .foregroundColor(Color(hex: "4A6378"))
                         .tracking(1)
                 }

@@ -3,46 +3,167 @@ import SwiftUI
 struct EventsListView: View {
     @StateObject private var repo = EventRepository.shared
     @StateObject private var calendar = CalendarService.shared
-    @State private var searchText = ""
     @State private var showEditEvent: NudgeEvent?
     @State private var showNewEvent = false
     @State private var selectedDate = Date()
+    @State private var isExpanded = false
 
     var body: some View {
-        NavigationStack {
-            Group {
+        ZStack {
+            AppBackground()
+
+            VStack(spacing: 0) {
+                // Custom header (replaces nav title)
+                headerSection
+
+                // Day circle bubbles
+                dayBubblesRow
+                    .padding(.bottom, 12)
+
                 if repo.nudgeEvents.isEmpty {
                     emptyView
                 } else {
-                    eventListContent
+                    eventsSection
                 }
             }
-            .navigationTitle("Events")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 12) {
-                        Button(action: { calendar.refresh() }) {
-                            Image(systemName: "magnifyingglass")
-                        }
-                        Button(action: { showNewEvent = true }) {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(Theme.accent)
+        }
+        .onAppear { calendar.refresh() }
+        .sheet(item: $showEditEvent) { event in EditEventView(event: event) }
+        .sheet(isPresented: $showNewEvent) { NewEventView() }
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(dayString(selectedDate))
+                    .font(.albertSans(34, weight: .bold))
+                    .foregroundColor(Color.nudgeButton)
+                Text(fullDateString(selectedDate))
+                    .font(.albertSans(13))
+                    .foregroundColor(Color(hex: "8A9FAF"))
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 8) {
+                Button(action: { showNewEvent = true }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(Color.nudgeButton)
+                }
+                HStack(spacing: 4) {
+                    Image(systemName: "sun.max.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.orange.opacity(0.8))
+                    Text("62°F")
+                        .font(.albertSans(12))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 14)
+    }
+
+    // MARK: - Day Circle Bubbles
+
+    private var dayBubblesRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 14) {
+                ForEach(0..<14, id: \.self) { offset in
+                    let d = Calendar.current.date(byAdding: .day, value: offset - 1, to: Date()) ?? Date()
+                    let isSelected = Calendar.current.isDate(d, inSameDayAs: selectedDate)
+                    let dateNum = Calendar.current.component(.day, from: d)
+                    let letter = dayLetterFor(d)
+
+                    Button(action: { selectedDate = d }) {
+                        VStack(spacing: 5) {
+                            ZStack {
+                                Circle()
+                                    .fill(isSelected ? Color.nudgeButton : Color.white.opacity(0.8))
+                                    .frame(width: 38, height: 38)
+                                    .overlay(
+                                        Circle().stroke(
+                                            isSelected ? Color.nudgeButton : Color(hex: "D0DCE8"),
+                                            lineWidth: 1.5
+                                        )
+                                    )
+                                    .shadow(
+                                        color: isSelected ? Color.nudgeButton.opacity(0.3) : Color.black.opacity(0.06),
+                                        radius: isSelected ? 6 : 3, x: 0, y: 2
+                                    )
+                                Text("\(dateNum)")
+                                    .font(.albertSans(14, weight: isSelected ? .bold : .semibold))
+                                    .foregroundColor(isSelected ? .white : Color(hex: "2C3E50"))
+                            }
+                            Text(letter)
+                                .font(.albertSans(10))
+                                .foregroundColor(isSelected ? Color.nudgeButton : Color(hex: "8A9FAF"))
                         }
                     }
+                    .buttonStyle(.plain)
                 }
             }
-            .sheet(item: $showEditEvent) { event in
-                EditEventView(event: event)
-            }
-            .sheet(isPresented: $showNewEvent) {
-                NewEventView()
-            }
-        }
-        .onAppear {
-            calendar.refresh()
+            .padding(.horizontal, 20)
         }
     }
+
+    // MARK: - Events section
+
+    private var eventsSection: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Section header with expand arrow
+                HStack {
+                    Text("Events")
+                        .font(.albertSans(13, weight: .semibold))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                        .textCase(.uppercase)
+                    Spacer()
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
+                    }) {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: "8A9FAF"))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+
+                if eventsForSelectedDate.isEmpty {
+                    Spacer().frame(height: 40)
+                    Text("No events on this day")
+                        .font(.albertSans(16))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                        .frame(maxWidth: .infinity)
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(eventsForSelectedDate) { event in
+                            if isExpanded {
+                                EventCardExpanded(
+                                    event: event,
+                                    onTogglePrep: { repo.togglePrep(for: event) },
+                                    onTap: { showEditEvent = event }
+                                )
+                            } else {
+                                EventCardMinimized(
+                                    event: event,
+                                    onTogglePrep: { repo.togglePrep(for: event) },
+                                    onTap: { showEditEvent = event }
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+    }
+
+    // MARK: - Helpers
 
     private var eventsForSelectedDate: [NudgeEvent] {
         repo.nudgeEvents.filter {
@@ -50,122 +171,19 @@ struct EventsListView: View {
         }
     }
 
-    private var eventListContent: some View {
-        VStack(spacing: 0) {
-            daySelector
-            if eventsForSelectedDate.isEmpty {
-                VStack(spacing: 12) {
-                    Spacer()
-                    Text("No events on this day")
-                        .font(Theme.headline)
-                        .foregroundColor(Theme.secondary)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-            } else {
-                List {
-                    ForEach(eventsForSelectedDate) { event in
-                        EventRowView(
-                            event: event,
-                            onTogglePrep: { repo.togglePrep(for: event) },
-                            onTap: { showEditEvent = event }
-                        )
-                        .listRowBackground(Color(.systemGroupedBackground))
-                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-                    }
-                }
-                .listStyle(.insetGrouped)
-            }
-        }
-    }
-
-    private var daySelector: some View {
-        VStack(spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(0..<7, id: \.self) { offset in
-                        let d = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
-                        let isSelected = Calendar.current.isDate(d, inSameDayAs: selectedDate)
-                        let dayLetter = dayLetterFor(d)
-                        let dateNum = Calendar.current.component(.day, from: d)
-                        Button(action: { selectedDate = d }) {
-                            VStack(spacing: 4) {
-                                Text(dayLetter)
-                                    .font(Theme.caption)
-                                Text("\(dateNum)")
-                                    .font(Theme.callout)
-                                    .fontWeight(isSelected ? .semibold : .regular)
-                            }
-                            .frame(width: 36)
-                            .padding(.vertical, 8)
-                            .background(isSelected ? Color.gray.opacity(0.25) : Color.clear)
-                            .cornerRadius(20)
-                        }
-                        .foregroundColor(Theme.primary)
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-            HStack {
-                Button(action: { selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(Theme.secondary)
-                }
-                Spacer()
-                VStack(alignment: .center, spacing: 2) {
-                    Text(dayString(selectedDate))
-                        .font(Theme.headline)
-                    Text(fullDateString(selectedDate))
-                        .font(Theme.caption2)
-                        .foregroundColor(Theme.secondary)
-                }
-                Spacer()
-                Button(action: { selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Theme.secondary)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
-        }
-        .padding(.top, 8)
-        .background(Theme.background)
-    }
-
     private func dayLetterFor(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "EEEEE"
-        return f.string(from: d)
+        let f = DateFormatter(); f.dateFormat = "EEEEE"; return f.string(from: d)
     }
-
     private func dayString(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "EEEE"
-        return f.string(from: d)
+        let f = DateFormatter(); f.dateFormat = "EEEE"; return f.string(from: d)
     }
-
     private func fullDateString(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "MMMM d, yyyy"
-        return f.string(from: d)
-    }
-
-    private var calendarPermissionView: some View {
-        VStack(spacing: 12) {
-            Text("Calendar access needed")
-                .font(Theme.headline)
-            Text("Enable calendar in Setup or Settings to see events.")
-                .font(Theme.subheadline)
-                .foregroundColor(Theme.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        let f = DateFormatter(); f.dateFormat = "MMMM d, yyyy"; return f.string(from: d)
     }
 
     private var emptyView: some View {
         VStack(spacing: 20) {
+            Spacer()
             ContentUnavailableView(
                 "No upcoming events",
                 systemImage: "calendar.badge.plus",
@@ -173,21 +191,77 @@ struct EventsListView: View {
             )
             Button(action: { showNewEvent = true }) {
                 Label("Add Event", systemImage: "plus.circle.fill")
-                    .font(Theme.headline)
+                    .font(.albertSans(16, weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Theme.accent)
-                    .cornerRadius(10)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 13)
+                    .background(Color.nudgeButton)
+                    .clipShape(Capsule())
             }
-            .padding(.top, 8)
+            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
 }
 
-struct EventRowView: View {
+// MARK: - Glossy card background helper
+
+private var glossyCardBackground: some View {
+    ZStack {
+        Color.cardSurface
+        LinearGradient(
+            colors: [Color.white.opacity(0.55), Color.clear],
+            startPoint: .top, endPoint: .bottom
+        )
+    }
+}
+
+// MARK: - Minimized Event Card
+
+struct EventCardMinimized: View {
+    let event: NudgeEvent
+    let onTogglePrep: () -> Void
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(timeString(event.startDate))
+                        .font(.albertSans(12))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                    Text(event.title)
+                        .font(.albertSans(16, weight: .semibold))
+                        .foregroundColor(Color(hex: "1A2A36"))
+                        .lineLimit(1)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { event.prepEnabled },
+                    set: { _ in onTogglePrep() }
+                ))
+                .labelsHidden()
+                .tint(Color.nudgeButton)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(glossyCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: Color(hex: "7A92A5").opacity(0.14), radius: 10, x: 0, y: 4)
+            .shadow(color: Color.white.opacity(0.9), radius: 1, x: 0, y: -1)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.7), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func timeString(_ d: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f.string(from: d)
+    }
+}
+
+// MARK: - Expanded Event Card
+
+struct EventCardExpanded: View {
     let event: NudgeEvent
     let onTogglePrep: () -> Void
     let onTap: () -> Void
@@ -195,58 +269,65 @@ struct EventRowView: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text(presetTypeLabel(for: event))
-                        .font(Theme.caption2)
-                        .foregroundColor(Theme.secondary)
+                        .font(.albertSans(11, weight: .semibold))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                        .textCase(.uppercase)
                     Spacer()
                     Text(timeString(event.startDate))
-                        .font(Theme.caption)
-                        .foregroundColor(Theme.secondary)
-                }
-                HStack(alignment: .center) {
-                    Image(systemName: iconName(for: event))
-                        .font(.albertSans(16))
-                        .foregroundColor(Theme.secondary)
-                    Text(event.title)
-                        .font(Theme.headline)
-                        .foregroundColor(Theme.primary)
-                    Image(systemName: "pencil")
                         .font(.albertSans(12))
-                        .foregroundColor(Theme.secondary)
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                }
+                HStack(alignment: .center, spacing: 10) {
+                    Image(systemName: iconName(for: event))
+                        .font(.system(size: 15))
+                        .foregroundColor(Color.nudgeButton)
+                    Text(event.title)
+                        .font(.albertSans(16, weight: .semibold))
+                        .foregroundColor(Color(hex: "1A2A36"))
+                        .lineLimit(1)
                     Spacer()
                     Toggle("", isOn: Binding(
                         get: { event.prepEnabled },
                         set: { _ in onTogglePrep() }
                     ))
                     .labelsHidden()
-                    .tint(Theme.accent)
+                    .tint(Color.nudgeButton)
                 }
-                Text("Checkpoint Progress \(event.completedCheckpoints)/\(event.numberOfCheckpoints(using: presetStore.presets))")
-                    .font(Theme.caption2)
-                    .foregroundColor(Theme.secondary)
-                ProgressView(value: Double(event.completedCheckpoints), total: Double(max(1, event.numberOfCheckpoints(using: presetStore.presets))))
-                    .tint(Theme.accent)
+                let total = max(1, event.numberOfCheckpoints(using: presetStore.presets))
+                let completed = event.completedCheckpoints
+                HStack {
+                    Text("Checkpoint Progress")
+                        .font(.albertSans(11))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                    Spacer()
+                    Text("\(completed)/\(total)")
+                        .font(.albertSans(11))
+                        .foregroundColor(Color(hex: "8A9FAF"))
+                }
+                ProgressView(value: Double(completed), total: Double(total))
+                    .tint(Color.nudgeButton)
             }
-            .padding(12)
-            .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(glossyCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: Color(hex: "7A92A5").opacity(0.14), radius: 10, x: 0, y: 4)
+            .shadow(color: Color.white.opacity(0.9), radius: 1, x: 0, y: -1)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.7), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
 
     private func presetTypeLabel(for event: NudgeEvent) -> String {
         guard let id = event.presetId, let p = presetStore.preset(byId: id) else { return "EVENT" }
-        return p.name.uppercased()
+        return p.name
     }
-
     private func timeString(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: d)
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f.string(from: d)
     }
-
     private func iconName(for event: NudgeEvent) -> String {
         guard let id = event.presetId, let p = presetStore.preset(byId: id) else { return "calendar" }
         return p.iconName

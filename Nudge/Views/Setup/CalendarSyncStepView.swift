@@ -13,20 +13,20 @@ struct CalendarSyncStepView: View {
             NudgeBackground()
 
             VStack(spacing: 0) {
-                // Header (no back button on step 1)
-                VStack(spacing: 6) {
+                // Header — Step label + title at same size, medium-bold
+                VStack(spacing: 4) {
                     Text("Step 1")
-                        .font(.albertSans(15))
+                        .font(.albertSans(24, weight: .semibold))
                         .foregroundColor(Color(hex: "8A9FAF"))
                     Text("Sync Your Calendar!")
-                        .font(.albertSans(26, weight: .bold))
+                        .font(.albertSans(24, weight: .semibold))
                         .foregroundColor(Color(hex: "1A2A36"))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 56)
                 .padding(.bottom, 32)
 
-                // Toggle rows — each in its own card
+                // Toggle rows — glossy cards
                 VStack(spacing: 12) {
                     CalendarToggleRow(label: "Google Calendar", isOn: $googleOn)
                     CalendarToggleRow(label: "Apple Calendar", isOn: $appleOn)
@@ -88,8 +88,24 @@ private struct CalendarToggleRow: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 17)
-        .background(Color.white)
+        .background(glossyCard)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 2)
+        .shadow(color: Color(hex: "7A92A5").opacity(0.18), radius: 12, x: 0, y: 5)
+        .shadow(color: Color.white.opacity(0.9), radius: 1, x: 0, y: -1)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+        )
+    }
+
+    private var glossyCard: some View {
+        ZStack {
+            Color.cardSurface
+            LinearGradient(
+                colors: [Color.white.opacity(0.55), Color.clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
     }
 }
